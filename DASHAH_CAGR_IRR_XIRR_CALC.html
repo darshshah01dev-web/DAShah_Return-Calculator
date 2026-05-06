@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>D A Shah Capital — Returns Calculator</title>
+<style>
+/* =====================================================
+   THEME TOKENS
+===================================================== */
+:root {
+  --bg:           #0a0a0f;
+  --surface:      #111118;
+  --surface2:     #1a1a24;
+  --border:       #2a2a3a;
+  --border-bright:#3a3a55;
+  --text:         #e8e8f0;
+  --text-dim:     #8888aa;
+  --text-dimmer:  #44445a;
+  --grid-opacity: 0.3;
+  --shadow:       0 4px 24px rgba(0,0,0,0.5);
+  --gold:   #f0b429;
+  --gold-d: #a07a1a;
+  --green:  #22c55e;
+  --red:    #ef4444;
+  --blue:   #60a5fa;
+  --purple: #a78bfa;
+}
+body.day {
+  --bg:           #f4f4f0;
+  --surface:      #ffffff;
+  --surface2:     #eeede8;
+  --border:       #d8d6ce;
+  --border-bright:#b8b6ae;
+  --text:         #1a1a22;
+  --text-dim:     #666677;
+  --text-dimmer:  #aaaaaa;
+  --grid-opacity: 0.18;
+  --shadow:       0 4px 24px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  transition: background 0.3s, color 0.3s;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: var(--grid-opacity);
+  pointer-events: none; z-index: 0;
+  transition: opacity 0.3s;
+}
+
+.app {
+  position: relative; z-index: 1;
+  max-width: 960px; margin: 0 auto;
+  padding: 28px 16px 80px;
+}
+
+/* =====================================================
+   TOPBAR
+===================================================== */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo-wrap { width: 52px; height: 52px; flex-shrink: 0; }
+.firm-name {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(15px, 3vw, 20px);
+  font-weight: 700; letter-spacing: 0.06em; color: var(--text); line-height: 1.1;
+}
+.firm-name span { color: var(--gold); }
+.firm-tag {
+  font-family: 'Courier New', monospace; font-size: 10px;
+  letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase; margin-top: 3px;
+}
+.theme-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 30px; padding: 6px 14px 6px 8px; cursor: pointer;
+  -webkit-appearance: none; min-height: 40px; transition: border-color 0.2s;
+}
+.theme-toggle:active { border-color: var(--gold); }
+.toggle-icon { font-size: 18px; line-height: 1; }
+.toggle-label {
+  font-family: 'Courier New', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase;
+}
+
+/* =====================================================
+   CONTACT BAR
+===================================================== */
+.contact-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 28px; }
+.contact-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 14px; text-decoration: none;
+  transition: border-color 0.2s;
+}
+.contact-pill:active { border-color: var(--gold); }
+.contact-pill-icon { font-size: 13px; }
+.contact-pill-text {
+  font-family: 'Courier New', monospace; font-size: 11px;
+  letter-spacing: 0.04em; color: var(--text-dim);
+}
+
+/* =====================================================
+   CALC HEADER
+===================================================== */
+.calc-header { margin-bottom: 28px; }
+.calc-label {
+  font-family: 'Courier New', monospace; font-size: 10px;
+  letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; margin-bottom: 6px;
+}
+.calc-title {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(20px, 4vw, 32px); font-weight: 700; line-height: 1.1; color: var(--text);
+}
+.calc-title span { color: var(--gold); }
+.calc-sub { margin-top: 6px; font-size: 13px; color: var(--text-dim); }
+
+/* =====================================================
+   TABS
+===================================================== */
+.tabs {
+  display: flex; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px; margin-bottom: 28px;
+}
+.tab {
+  flex: 1; padding: 10px 6px; border: none; background: transparent;
+  color: var(--text-dim); font-family: 'Courier New', monospace;
+  font-size: 11px; letter-spacing: 0.05em; cursor: pointer;
+  border-radius: 8px; transition: background 0.2s, color 0.2s;
+  text-transform: uppercase; -webkit-appearance: none; min-height: 42px;
+}
+.tab.active { background: var(--gold); color: #0a0a0f; font-weight: 700; }
+
+/* =====================================================
+   PANELS
+===================================================== */
+.panel { display: none; }
+.panel.active { display: block; animation: fadeUp 0.25s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.section-title {
+  font-family: 'Courier New', monospace; font-size: 10px;
+  letter-spacing: 0.15em; color: var(--text-dimmer); text-transform: uppercase;
+  margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 380px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+.input-group { margin-bottom: 18px; }
+.input-group label {
+  display: block; font-family: 'Courier New', monospace; font-size: 11px;
+  font-weight: 700; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 7px;
+}
+
+input[type="text"], input[type="number"], input[type="date"], select {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; color: var(--text);
+  font-family: 'Courier New', monospace; font-size: 15px; font-weight: 700; outline: none;
+  -webkit-appearance: none; appearance: none; transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(--gold); }
+input::placeholder { color: var(--text-dimmer); }
+input[type="date"] { min-height: 46px; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
+.input-prefix { position: relative; }
+.input-prefix .px {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--gold); font-family: 'Courier New', monospace; font-size: 14px;
+  pointer-events: none; z-index: 1;
+}
+.input-prefix input { padding-left: 28px; }
+
+.info-box {
+  background: rgba(240,180,41,0.06); border: 1px solid rgba(240,180,41,0.2);
+  border-radius: 8px; padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--text-dim);
+  margin-bottom: 20px; font-family: 'Courier New', monospace; line-height: 1.7;
+}
+.info-box strong { color: var(--gold); }
+
+.note { font-size:12px; font-weight:600; font-family:'Courier New',monospace; color:var(--text-dimmer); margin-bottom:14px; line-height:1.6; }
+.note .neg { color: var(--red); }
+
+/* =====================================================
+   FREQUENCY SELECTOR  (IRR)
+===================================================== */
+.freq-selector { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.freq-btn {
+  flex: 1; min-width: 80px;
+  padding: 10px 6px; border: 1px solid var(--border); border-radius: 8px;
+  background: transparent; color: var(--text-dim);
+  font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 0.06em;
+  cursor: pointer; text-transform: uppercase; -webkit-appearance: none;
+  min-height: 42px; text-align: center; transition: all 0.15s;
+}
+.freq-btn.active {
+  border-color: var(--gold); color: var(--gold);
+  background: rgba(240,180,41,0.08); font-weight: 700;
+}
+
+
+
+/* =====================================================
+   XIRR TABLE
+===================================================== */
+.cf-table {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden; margin-bottom: 14px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.cf-header {
+  display: grid; background: var(--surface2);
+  border-bottom: 1px solid var(--border); padding: 6px 10px; min-width: 300px;
+}
+.cf-header-xirr { grid-template-columns: 30px 130px 1fr 36px; gap: 4px; }
+.cf-col-label {
+  font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 0.08em;
+  color: var(--text-dimmer); text-transform: uppercase; padding: 4px 6px;
+}
+.cf-row {
+  display: grid; align-items: center; padding: 4px 10px;
+  border-bottom: 1px solid var(--border); min-width: 300px; gap: 4px;
+}
+.cf-row:last-child { border-bottom: none; }
+.cf-row-xirr { grid-template-columns: 30px 130px 1fr 36px; }
+.cf-row-num { font-family:'Courier New',monospace; font-size:11px; color:var(--text-dimmer); text-align:center; }
+.cf-row input {
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  padding: 8px; color: var(--text); font-family: 'Courier New', monospace;
+  font-size: 13px; width: 100%; outline: none; -webkit-appearance: none; min-height: 40px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cf-row input:focus { border-color: var(--border-bright); background: var(--surface2); }
+.cf-row input::placeholder { color: var(--text-dimmer); }
+.del-btn {
+  background: none; border: none; color: var(--text-dimmer); cursor: pointer;
+  font-size: 20px; line-height: 1; padding: 0; border-radius: 6px;
+  min-width: 36px; min-height: 40px; display: flex; align-items: center;
+  justify-content: center; -webkit-appearance: none;
+}
+.del-btn:active { color: var(--red); }
+.add-row-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: none; border: 1px dashed var(--border); color: var(--text-dim);
+  font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 12px; border-radius: 8px; cursor: pointer;
+  width: 100%; margin-bottom: 18px; -webkit-appearance: none; min-height: 46px;
+}
+.add-row-btn:active { border-color: var(--gold-d); color: var(--gold); }
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+.calc-btn {
+  background: var(--gold); color: #0a0a0f; border: none; border-radius: 10px;
+  padding: 14px 32px; font-family: 'Courier New', monospace; font-size: 13px;
+  font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  width: 100%; margin-top: 4px; -webkit-appearance: none; min-height: 50px;
+  transition: opacity 0.2s;
+}
+.calc-btn:active { opacity: 0.82; }
+
+.btn-row { display: flex; gap: 10px; margin-top: 4px; }
+.btn-row .calc-btn { flex: 1; margin-top: 0; }
+.reset-btn {
+  background: transparent; color: var(--text-dim); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; font-family: 'Courier New', monospace;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; -webkit-appearance: none; min-height: 50px; white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s;
+}
+.reset-btn:active { border-color: var(--red); color: var(--red); }
+
+/* =====================================================
+   RESULT CARD
+===================================================== */
+.result-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 22px; margin-top: 20px; display: none; position: relative; overflow: hidden;
+  animation: fadeUp 0.3s ease; box-shadow: var(--shadow);
+}
+.result-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+.result-card.show { display: block; }
+.result-card.error::before { background: linear-gradient(90deg, var(--red), transparent); }
+.result-label {
+  font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+  color: var(--text-dimmer); text-transform: uppercase; margin-bottom: 8px;
+}
+.result-value {
+  font-family: 'Courier New', monospace; font-size: clamp(32px, 7vw, 52px);
+  font-weight: 700; color: var(--gold); line-height: 1; margin-bottom: 6px; word-break: break-all;
+}
+.result-value.neg { color: var(--red); }
+.result-value.low { color: var(--text-dim); }
+.result-meta { font-size: 14px; font-weight: 600; color: var(--text-dim); margin-top: 10px; }
+.result-breakdown {
+  margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px;
+}
+.bd-label { font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-dimmer); text-transform:uppercase; margin-bottom:4px; }
+.bd-val   { font-family:'Courier New',monospace; font-size:15px; font-weight:700; color:var(--text); }
+.bd-val.pos { color: var(--green); }
+.bd-val.neg { color: var(--red); }
+.error-msg { font-family:'Courier New',monospace; font-size:14px; font-weight:700; color:var(--red); line-height:1.6; }
+
+.divider { height:1px; background:var(--border); margin:20px 0; }
+
+/* =====================================================
+   FOOTER
+===================================================== */
+.footer {
+  margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+}
+.footer-logo { width: 36px; height: 36px; opacity: 0.7; }
+.footer-firm { font-family:'Courier New',monospace; font-size:13px; font-weight:700; letter-spacing:0.1em; color:var(--text-dim); }
+.footer-firm span { color: var(--gold); }
+.footer-copy { font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.1em; color:var(--text-dimmer); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo-wrap">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+          <circle cx="50" cy="50" r="50" fill="#000"/>
+          <circle cx="50" cy="50" r="38" fill="#fff"/>
+          <polygon points="50,12 36,50 64,50" fill="#000"/>
+          <polygon points="50,88 36,50 64,50" fill="#000"/>
+          <polygon points="50,20 41,38 59,38" fill="#1a7a00"/>
+          <polygon points="50,80 41,62 59,62" fill="#aa0000"/>
+          <rect x="22" y="47" width="14" height="6" fill="#000"/>
+          <rect x="64" y="47" width="14" height="6" fill="#000"/>
+          <circle cx="50" cy="50" r="10" fill="#000"/>
+          <text x="50" y="55" text-anchor="middle" font-family="'Courier New',monospace" font-size="12" font-weight="bold" fill="#fff">D</text>
+        </svg>
+      </div>
+      <div>
+        <div class="firm-name">D A <span>Shah</span> Capital</div>
+        <div class="firm-tag">Investment Analytics</div>
+      </div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span class="toggle-icon" id="theme-icon">☀️</span>
+      <span class="toggle-label" id="theme-label">Day</span>
+    </button>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="contact-bar">
+    <a class="contact-pill" href="https://instagram.com/dashah_capital" target="_blank">
+      <span class="contact-pill-icon">📸</span>
+      <span class="contact-pill-text">@dashah_capital</span>
+    </a>
+    <a class="contact-pill" href="tel:7573018747">
+      <span class="contact-pill-icon">📞</span>
+      <span class="contact-pill-text">+91 75730 18747</span>
+    </a>
+  </div>
+
+  <!-- TITLE -->
+  <div class="calc-header">
+    <div class="calc-label">// Returns Calculator</div>
+    <div class="calc-title">CAGR · IRR · <span>XIRR</span></div>
+    <div class="calc-sub">Professional return metrics — works fully offline</div>
+  </div>
+
+  <!-- TABS — 3 only -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('cagr', this)">CAGR</button>
+    <button class="tab"        onclick="switchTab('irr',  this)">IRR</button>
+    <button class="tab"        onclick="switchTab('xirr', this)">XIRR</button>
+  </div>
+
+  <!-- ==================== CAGR ==================== -->
+  <div id="panel-cagr" class="panel active">
+    <div class="info-box">
+      <strong>CAGR</strong> — Single lump-sum, fixed period. Shows the smooth annualised rate as if your investment grew steadily each year.
+    </div>
+    <div class="grid-3">
+      <div class="input-group">
+        <label>Initial Value</label>
+        <div class="input-prefix">
+          <span class="px">₹</span>
+          <input type="number" id="cagr-initial" placeholder="100000" inputmode="decimal">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Final Value</label>
+        <div class="input-prefix">
+          <span class="px">₹</span>
+          <input type="number" id="cagr-final" placeholder="200000" inputmode="decimal">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Duration (years)</label>
+        <input type="number" id="cagr-years" placeholder="5" inputmode="decimal" step="0.01">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcCAGR()">Calculate CAGR</button>
+      <button class="reset-btn" onclick="resetCAGR()">↺ Reset</button>
+    </div>
+    <div id="cagr-result" class="result-card">
+      <div class="result-label">Compound Annual Growth Rate</div>
+      <div id="cagr-val" class="result-value"></div>
+      <div id="cagr-meta" class="result-meta"></div>
+      <div id="cagr-bd" class="result-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- ==================== IRR ==================== -->
+  <div id="panel-irr" class="panel">
+    <div class="info-box">
+      <strong>IRR</strong> — For equal, regularly-spaced investments (SIP). Select the frequency, enter how many periods you invest for, the amount per period, and the final payout received.
+    </div>
+
+    <!-- Step 1: Frequency -->
+    <div class="section-title">Step 1 — Select Frequency</div>
+    <div class="freq-selector">
+      <button class="freq-btn active" onclick="setFreq('monthly',   this)">Monthly</button>
+      <button class="freq-btn"        onclick="setFreq('quarterly', this)">Quarterly</button>
+      <button class="freq-btn"        onclick="setFreq('yearly',    this)">Yearly</button>
+    </div>
+
+    <!-- Step 2: Inputs -->
+    <div class="section-title">Step 2 — Enter Details</div>
+    <div class="grid-3">
+      <div class="input-group">
+        <label id="irr-periods-label">Number of Months</label>
+        <input type="number" id="irr-periods" placeholder="12" inputmode="numeric" min="1" step="1">
+      </div>
+      <div class="input-group">
+        <label id="irr-payin-label">Pay-in per Month</label>
+        <div class="input-prefix">
+          <span class="px">₹</span>
+          <input type="number" id="irr-payin" placeholder="5000" inputmode="decimal" min="0">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Final Payout Received</label>
+        <div class="input-prefix">
+          <span class="px">₹</span>
+          <input type="number" id="irr-payout" placeholder="75000" inputmode="decimal" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Pay-in display -->
+    <div id="irr-total-box" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:20px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <span style="font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; color:var(--text-dimmer); text-transform:uppercase;">Total Pay-in</span>
+      <span id="irr-total-val" style="font-family:'Courier New',monospace; font-size:22px; font-weight:700; color:var(--red);">₹0</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcIRR()">Calculate IRR</button>
+      <button class="reset-btn" onclick="resetIRR()">↺ Reset</button>
+    </div>
+
+    <div id="irr-result" class="result-card">
+      <div class="result-label">Internal Rate of Return (Annualised)</div>
+      <div id="irr-val" class="result-value"></div>
+      <div id="irr-meta" class="result-meta"></div>
+      <div id="irr-bd" class="result-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- ==================== XIRR ==================== -->
+  <div id="panel-xirr" class="panel">
+    <div class="info-box">
+      <strong>XIRR</strong> — For irregular cash flows with exact dates. Use this when investment amounts vary or dates are not evenly spaced. Enter each transaction with its actual date.
+    </div>
+    <div class="note">
+      Enter <span class="neg">negative (−)</span> amounts for money you invested (outflow).<br>
+      Enter <strong>positive</strong> amounts for money received / current portfolio value (inflow).
+    </div>
+
+    <div class="cf-table">
+      <div class="cf-header cf-header-xirr">
+        <div class="cf-col-label">#</div>
+        <div class="cf-col-label">Date</div>
+        <div class="cf-col-label">Amount ₹</div>
+        <div class="cf-col-label"></div>
+      </div>
+      <div id="xirr-rows"></div>
+    </div>
+    <button class="add-row-btn" onclick="addXIRRRow('', '', true)">+ Add Transaction</button>
+    <div class="btn-row">
+      <button class="calc-btn" onclick="calcXIRR()">Calculate XIRR</button>
+      <button class="reset-btn" onclick="resetXIRR()">↺ Reset</button>
+    </div>
+
+    <div id="xirr-result" class="result-card">
+      <div class="result-label">Extended IRR (Annualised)</div>
+      <div id="xirr-val" class="result-value"></div>
+      <div id="xirr-meta" class="result-meta"></div>
+      <div id="xirr-bd" class="result-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <svg class="footer-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="50" fill="#000"/>
+      <circle cx="50" cy="50" r="38" fill="#fff"/>
+      <polygon points="50,12 36,50 64,50" fill="#000"/>
+      <polygon points="50,88 36,50 64,50" fill="#000"/>
+      <polygon points="50,20 41,38 59,38" fill="#1a7a00"/>
+      <polygon points="50,80 41,62 59,62" fill="#aa0000"/>
+      <rect x="22" y="47" width="14" height="6" fill="#000"/>
+      <rect x="64" y="47" width="14" height="6" fill="#000"/>
+      <circle cx="50" cy="50" r="10" fill="#000"/>
+      <text x="50" y="55" text-anchor="middle" font-family="'Courier New',monospace" font-size="12" font-weight="bold" fill="#fff">D</text>
+    </svg>
+    <div class="footer-firm">D A <span>Shah</span> Capital</div>
+    <div class="footer-copy">© 2025 D A Shah Capital · All rights reserved</div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================
+   GLOBALS
+===================================================== */
+var irrFreq      = 'monthly';
+var xirrRowCount = 0;
+var isDayMode    = false;
+
+/* =====================================================
+   THEME
+===================================================== */
+function toggleTheme() {
+  isDayMode = !isDayMode;
+  document.body.classList.toggle('day', isDayMode);
+  document.getElementById('theme-icon').textContent  = isDayMode ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = isDayMode ? 'Night' : 'Day';
+}
+
+/* =====================================================
+   TABS
+===================================================== */
+function switchTab(name, btn) {
+  var tabs   = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.panel');
+  for (var i = 0; i < tabs.length;   i++) tabs[i].classList.remove('active');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+/* =====================================================
+   IRR FREQUENCY SELECTOR
+===================================================== */
+function setFreq(freq, btn) {
+  irrFreq = freq;
+  var btns = document.querySelectorAll('.freq-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  btn.classList.add('active');
+  updateIRRLabels();
+  updateIRRTotal();
+}
+
+function getFreqWord() {
+  if (irrFreq === 'monthly')   return 'Month';
+  if (irrFreq === 'quarterly') return 'Quarter';
+  return 'Year';
+}
+
+function getPeriodsPerYear() {
+  if (irrFreq === 'monthly')   return 12;
+  if (irrFreq === 'quarterly') return 4;
+  return 1;
+}
+
+function updateIRRLabels() {
+  var w = getFreqWord();
+  document.getElementById('irr-periods-label').textContent = 'Number of ' + w + 's';
+  document.getElementById('irr-payin-label').textContent   = 'Pay-in per ' + w;
+}
+
+/* =====================================================
+   IRR TOTAL PAY-IN (live update)
+===================================================== */
+function updateIRRTotal() {
+  var n     = parseInt(document.getElementById('irr-periods').value);
+  var payin = parseFloat(document.getElementById('irr-payin').value);
+  var box   = document.getElementById('irr-total-box');
+  var val   = document.getElementById('irr-total-val');
+
+  if (!isNaN(n) && n > 0 && !isNaN(payin) && payin > 0) {
+    box.style.display = 'flex';
+    val.textContent   = '₹' + fmt(n * payin);
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+['irr-periods', 'irr-payin', 'irr-payout'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', updateIRRTotal);
+});
+
+/* =====================================================
+   XIRR ROW BUILDER
+===================================================== */
+function addXIRRRow(cfVal, dateVal, userAdded) {
+  var container = document.getElementById('xirr-rows');
+  var i = xirrRowCount++;
+  var today = toDateString(new Date());
+
+  var row = document.createElement('div');
+  row.className = 'cf-row cf-row-xirr';
+
+  var numDiv = document.createElement('div');
+  numDiv.className = 'cf-row-num';
+  numDiv.textContent = i + 1;
+
+  var dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.className = 'xirr-date';
+  dateInput.value = dateVal || today;
+
+  var amtInput = document.createElement('input');
+  amtInput.type = 'number';
+  amtInput.className = 'cf-amount';
+  amtInput.placeholder = i === 0 ? '-100000' : '10000';
+  amtInput.setAttribute('inputmode', 'decimal');
+  amtInput.setAttribute('step', 'any');
+  if (cfVal !== '' && cfVal !== undefined) {
+    amtInput.value = cfVal;
+    colorAmt(amtInput, parseFloat(cfVal));
+  }
+  amtInput.addEventListener('input', function() { colorAmt(this, parseFloat(this.value)); });
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'del-btn';
+  delBtn.textContent = '×';
+  (function(r) {
+    delBtn.addEventListener('click', function() { removeXIRRRow(r); });
+  })(row);
+
+  row.appendChild(numDiv);
+  row.appendChild(dateInput);
+  row.appendChild(amtInput);
+  row.appendChild(delBtn);
+  container.appendChild(row);
+}
+
+function removeXIRRRow(row) {
+  row.parentNode.removeChild(row);
+  // Renumber cleanly from DOM — no counter dependency
+  var nums = document.querySelectorAll('#xirr-rows .cf-row-num');
+  for (var i = 0; i < nums.length; i++) nums[i].textContent = i + 1;
+}
+
+function colorAmt(el, v) {
+  el.style.color = isNaN(v) ? 'var(--text)' : v < 0 ? 'var(--red)' : v > 0 ? 'var(--green)' : 'var(--text)';
+}
+
+/* =====================================================
+   CAGR
+===================================================== */
+function calcCAGR() {
+  var iv = parseFloat(document.getElementById('cagr-initial').value);
+  var fv = parseFloat(document.getElementById('cagr-final').value);
+  var n  = parseFloat(document.getElementById('cagr-years').value);
+  var el = document.getElementById('cagr-result');
+
+  if (isNaN(iv) || isNaN(fv) || isNaN(n) || iv <= 0 || n <= 0)
+    return showError(el, 'cagr-val', 'cagr-meta', 'cagr-bd', 'Fill all three fields with valid positive numbers.');
+
+  var cagr = Math.pow(fv / iv, 1 / n) - 1;
+  var gain = fv - iv;
+
+  showResult(el,
+    'cagr-val',  (cagr * 100).toFixed(2) + '%', cagr,
+    'cagr-meta', '₹' + fmt(iv) + ' → ₹' + fmt(fv) + ' over ' + n + ' yr' + (n === 1 ? '' : 's'),
+    'cagr-bd', [
+      ['Total Gain',      '₹' + fmt(gain),                      gain >= 0 ? 'pos' : 'neg'],
+      ['Absolute Return', ((gain / iv) * 100).toFixed(2) + '%', gain >= 0 ? 'pos' : 'neg'],
+      ['Invested',        '₹' + fmt(iv),  ''],
+      ['Final Value',     '₹' + fmt(fv),  ''],
+      ['Period',          n + ' yr' + (n === 1 ? '' : 's'),     '']
+    ]
+  );
+}
+
+/* =====================================================
+   IRR  — form-based, no rows, no delete bug
+===================================================== */
+function calcIRR() {
+  var n      = parseInt(document.getElementById('irr-periods').value);
+  var payin  = parseFloat(document.getElementById('irr-payin').value);
+  var payout = parseFloat(document.getElementById('irr-payout').value);
+  var el     = document.getElementById('irr-result');
+
+  if (isNaN(n) || n < 1)            return showError(el, 'irr-val', 'irr-meta', 'irr-bd', 'Enter a valid number of periods (minimum 1).');
+  if (isNaN(payin) || payin <= 0)   return showError(el, 'irr-val', 'irr-meta', 'irr-bd', 'Enter a valid positive pay-in amount per period.');
+  if (isNaN(payout) || payout <= 0) return showError(el, 'irr-val', 'irr-meta', 'irr-bd', 'Enter a valid positive final payout amount.');
+
+  var cfs = [];
+  for (var i = 0; i < n; i++) cfs.push(-payin);
+  cfs.push(payout);
+
+  var totalInvested = n * payin;
+  var irr = computeIRR(cfs, 0.1);
+  if (irr === null) return showError(el, 'irr-val', 'irr-meta', 'irr-bd', 'Could not converge. Try adjusting the payout amount.');
+
+  var ppy     = getPeriodsPerYear();
+  var ann     = (Math.pow(1 + irr, ppy) - 1) * 100;
+  var gain    = payout - totalInvested;
+  var absRet  = (gain / totalInvested) * 100;
+  var w       = getFreqWord().toLowerCase();
+
+  showResult(el,
+    'irr-val',  ann.toFixed(2) + '%', ann / 100,
+    'irr-meta', n + ' ' + w + 's of ₹' + fmt(payin) + ' · Payout ₹' + fmt(payout),
+    'irr-bd', [
+      ['Annualised Return', ann.toFixed(2) + '%',       ann >= 0 ? 'pos' : 'neg'],
+      ['Absolute Return',   absRet.toFixed(2) + '%',    absRet >= 0 ? 'pos' : 'neg'],
+      ['Per ' + w,          (irr * 100).toFixed(4) + '%', ''],
+      ['Total Invested',    '₹' + fmt(totalInvested),   'neg'],
+      ['Payout Received',   '₹' + fmt(payout),          'pos'],
+      ['Net Gain',          '₹' + fmt(gain),             gain >= 0 ? 'pos' : 'neg'],
+      ['Duration',          n + ' ' + w + 's',           '']
+    ]
+  );
+}
+
+/* =====================================================
+   XIRR
+===================================================== */
+function calcXIRR() {
+  var rows = document.querySelectorAll('#xirr-rows .cf-row');
+  var cfs = [], dates = [];
+  var el = document.getElementById('xirr-result');
+
+  for (var i = 0; i < rows.length; i++) {
+    var amt  = parseFloat(rows[i].querySelector('.cf-amount').value);
+    var dStr = rows[i].querySelector('.xirr-date').value;
+    if (isNaN(amt)) return showError(el, 'xirr-val', 'xirr-meta', 'xirr-bd', 'Row ' + (i+1) + ' has an invalid amount.');
+    if (!dStr)      return showError(el, 'xirr-val', 'xirr-meta', 'xirr-bd', 'Row ' + (i+1) + ' is missing a date.');
+    cfs.push(amt);
+    dates.push(parseDate(dStr));
+  }
+
+  if (cfs.length < 2) return showError(el, 'xirr-val', 'xirr-meta', 'xirr-bd', 'Add at least 2 transactions.');
+  if (!cfs.some(function(v){ return v < 0; }) || !cfs.some(function(v){ return v > 0; }))
+    return showError(el, 'xirr-val', 'xirr-meta', 'xirr-bd', 'Need both negative (outflow) and positive (inflow) values.');
+
+  var xirr = computeXIRR(cfs, dates, 0.1);
+  if (xirr === null) return showError(el, 'xirr-val', 'xirr-meta', 'xirr-bd', 'Could not converge. Please check amounts and dates.');
+
+  var sorted   = dates.slice().sort(function(a, b) { return a - b; });
+  var days     = (sorted[sorted.length - 1] - sorted[0]) / 864e5;
+  var years    = (days / 365).toFixed(2);
+  var totOut   = cfs.filter(function(v){ return v < 0; }).reduce(function(a, b){ return a + b; }, 0);
+  var totIn    = cfs.filter(function(v){ return v > 0; }).reduce(function(a, b){ return a + b; }, 0);
+  var gain     = totIn + totOut;
+  var absRet   = (gain / Math.abs(totOut)) * 100;
+
+  showResult(el,
+    'xirr-val',  (xirr * 100).toFixed(2) + '%', xirr,
+    'xirr-meta', cfs.length + ' transactions over ~' + years + ' years',
+    'xirr-bd', [
+      ['Annualised',      (xirr * 100).toFixed(2) + '%', xirr >= 0 ? 'pos' : 'neg'],
+      ['Absolute Return', absRet.toFixed(2) + '%',        absRet >= 0 ? 'pos' : 'neg'],
+      ['Total Invested',  '₹' + fmt(Math.abs(totOut)),   'neg'],
+      ['Total Received',  '₹' + fmt(totIn),              'pos'],
+      ['Net Gain',        '₹' + fmt(gain),               gain >= 0 ? 'pos' : 'neg'],
+      ['Duration',        years + ' yrs',                 ''],
+      ['Transactions',    '' + cfs.length,                '']
+    ]
+  );
+}
+
+/* =====================================================
+   MATH — Newton-Raphson
+===================================================== */
+function computeIRR(cfs, guess) {
+  var r = guess;
+  for (var iter = 0; iter < 1000; iter++) {
+    var f = 0, df = 0;
+    for (var t = 0; t < cfs.length; t++) {
+      var pw = Math.pow(1 + r, t);
+      f  += cfs[t] / pw;
+      df -= t * cfs[t] / (pw * (1 + r));
+    }
+    if (Math.abs(df) < 1e-14) break;
+    var r1 = r - f / df;
+    if (Math.abs(r1 - r) < 1e-9) return r1;
+    r = r1;
+    if (r < -0.9999) r = -0.9;
+  }
+  if (guess === 0.1) return computeIRR(cfs, -0.1);
+  return null;
+}
+
+function computeXIRR(cfs, dates, guess) {
+  var d0 = dates[0];
+  var r  = guess;
+  for (var iter = 0; iter < 1000; iter++) {
+    var f = 0, df = 0;
+    for (var t = 0; t < cfs.length; t++) {
+      var exp   = (dates[t] - d0) / 864e5 / 365;
+      var denom = Math.pow(1 + r, exp);
+      f  += cfs[t] / denom;
+      df -= exp * cfs[t] / (denom * (1 + r));
+    }
+    if (Math.abs(df) < 1e-14) break;
+    var r1 = r - f / df;
+    if (Math.abs(r1 - r) < 1e-9) return r1;
+    r = r1;
+    if (r < -0.9999) r = -0.9;
+  }
+  if (guess === 0.1) return computeXIRR(cfs, dates, -0.5);
+  return null;
+}
+
+/* =====================================================
+   HELPERS
+===================================================== */
+function parseDate(str) {
+  var p = str.split('-');
+  return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+}
+
+function toDateString(d) {
+  var m   = ('0' + (d.getMonth() + 1)).slice(-2);
+  var day = ('0' + d.getDate()).slice(-2);
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+
+function fmt(n) {
+  var abs = Math.abs(n), sign = n < 0 ? '-' : '';
+  if (abs >= 1e7) return sign + (abs / 1e7).toFixed(2) + ' Cr';
+  if (abs >= 1e5) return sign + (abs / 1e5).toFixed(2) + ' L';
+  return sign + Math.round(abs).toLocaleString('en-IN');
+}
+
+function showResult(el, valId, valTxt, valNum, metaId, metaTxt, bdId, rows) {
+  // Fully reset the card structure before writing — fixes error-state bug
+  el.innerHTML =
+    '<div class="result-label" id="' + el.id + '-lbl"></div>' +
+    '<div class="result-value" id="' + valId + '"></div>' +
+    '<div class="result-meta"  id="' + metaId + '"></div>' +
+    '<div class="result-breakdown" id="' + bdId + '"></div>';
+  el.classList.remove('error');
+
+  document.getElementById(valId).textContent  = valTxt;
+  document.getElementById(valId).className    = 'result-value' + (valNum < 0 ? ' neg' : valNum < 0.03 ? ' low' : '');
+  document.getElementById(metaId).textContent = metaTxt;
+  var bdEl = document.getElementById(bdId);
+  for (var i = 0; i < rows.length; i++) {
+    var item = document.createElement('div');
+    var lbl  = document.createElement('div');
+    var val  = document.createElement('div');
+    lbl.className   = 'bd-label';
+    lbl.textContent = rows[i][0];
+    val.className   = 'bd-val' + (rows[i][2] ? ' ' + rows[i][2] : '');
+    val.textContent = rows[i][1];
+    item.appendChild(lbl);
+    item.appendChild(val);
+    bdEl.appendChild(item);
+  }
+  el.classList.add('show');
+}
+
+function showError(el, valId, metaId, bdId, msg) {
+  // Fully reset card structure — prevents stale DOM from blocking next calculation
+  el.innerHTML =
+    '<div class="result-label">Error</div>' +
+    '<div class="result-value" id="' + valId + '" style="display:none"></div>' +
+    '<div class="result-meta"  id="' + metaId + '"></div>' +
+    '<div class="result-breakdown" id="' + bdId + '"></div>' +
+    '<div class="error-msg">' + msg + '</div>';
+  el.classList.remove('show');
+  el.classList.add('show', 'error');
+}
+
+/* =====================================================
+   RESET FUNCTIONS
+===================================================== */
+function resetCAGR() {
+  document.getElementById('cagr-initial').value = '';
+  document.getElementById('cagr-final').value   = '';
+  document.getElementById('cagr-years').value   = '';
+  var el = document.getElementById('cagr-result');
+  el.classList.remove('show', 'error');
+  el.innerHTML =
+    '<div class="result-label">Compound Annual Growth Rate</div>' +
+    '<div class="result-value" id="cagr-val"></div>' +
+    '<div class="result-meta"  id="cagr-meta"></div>' +
+    '<div class="result-breakdown" id="cagr-bd"></div>';
+}
+
+function resetIRR() {
+  document.getElementById('irr-periods').value = '';
+  document.getElementById('irr-payin').value   = '';
+  document.getElementById('irr-payout').value  = '';
+  document.getElementById('irr-total-box').style.display = 'none';
+  var el = document.getElementById('irr-result');
+  el.classList.remove('show', 'error');
+  el.innerHTML =
+    '<div class="result-label">Internal Rate of Return (Annualised)</div>' +
+    '<div class="result-value" id="irr-val"></div>' +
+    '<div class="result-meta"  id="irr-meta"></div>' +
+    '<div class="result-breakdown" id="irr-bd"></div>';
+}
+
+function resetXIRR() {
+  var container = document.getElementById('xirr-rows');
+  container.innerHTML = '';
+  xirrRowCount = 0;
+  var el = document.getElementById('xirr-result');
+  el.classList.remove('show', 'error');
+  el.innerHTML =
+    '<div class="result-label">Extended IRR (Annualised)</div>' +
+    '<div class="result-value" id="xirr-val"></div>' +
+    '<div class="result-meta"  id="xirr-meta"></div>' +
+    '<div class="result-breakdown" id="xirr-bd"></div>';
+  // Add two blank rows to start fresh
+  var now = new Date();
+  addXIRRRow('', toDateString(now), false);
+  addXIRRRow('', toDateString(now), false);
+}
+
+/* =====================================================
+   INIT — seed XIRR with sample data
+===================================================== */
+(function init() {
+  var now = new Date();
+  var y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
+  addXIRRRow('-100000', toDateString(new Date(y-3, mo,   d)), false);
+  addXIRRRow('-50000',  toDateString(new Date(y-3, mo+6, d)), false);
+  addXIRRRow('-30000',  toDateString(new Date(y-2, mo+2, d)), false);
+  addXIRRRow('230000',  toDateString(new Date(y,   mo,   d)), false);
+})();
+</script>
+</body>
+</html>
